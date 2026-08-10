@@ -4,7 +4,7 @@ const express      = require('express');
 const helmet       = require('helmet');
 const cors         = require('cors');
 const rateLimit    = require('express-rate-limit');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 
 const routes       = require('./config/routes');
 const logger       = require('./config/logger');
@@ -13,21 +13,6 @@ const { correlationId, requestLogger } = require('./middleware/correlation.middl
 const { errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
-
-function forwardParsedBody(proxyReq, req) {
-  if (!req.body || !Object.keys(req.body).length) {
-    return;
-  }
-
-  const contentType = proxyReq.getHeader('Content-Type');
-  if (!contentType || !contentType.toString().includes('application/json')) {
-    return;
-  }
-
-  const bodyData = JSON.stringify(req.body);
-  proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
-  proxyReq.write(bodyData);
-}
 
 // Respect the single reverse proxy hop used by Docker/K8s ingress so
 // express-rate-limit can safely consume X-Forwarded-For.
@@ -87,16 +72,15 @@ routes.forEach((route) => {
           }
         },
         proxyReq: (proxyReq, req) => {
+          // Re-stream parsed req.body to downstream service
+          fixRequestBody(proxyReq, req);
+
           // Forward correlation ID and decoded user identity
           proxyReq.setHeader('X-Correlation-ID', req.correlationId || '');
           if (req.user) {
             proxyReq.setHeader('X-User-ID',   req.user.sub  || '');
             proxyReq.setHeader('X-User-Role',  req.user.role || '');
           }
-
-          // express.json() consumes the request stream, so JSON bodies must be
-          // serialized back onto proxied requests for upstream services.
-          forwardParsedBody(proxyReq, req);
         },
       },
     })
