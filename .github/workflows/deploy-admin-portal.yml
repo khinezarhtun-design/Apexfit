@@ -3,7 +3,7 @@ name: Deploy Admin Portal to EC2
 on:
   push:
     branches:
-      - main
+      - main  # Make sure this matches your default branch name (main or master)
     paths:
       - 'frontend/admin-portal/**'
       - '.github/workflows/deploy-admin-portal.yml'
@@ -30,7 +30,7 @@ jobs:
             echo "2. Navigating to project & pulling latest code..."
             cd "$APP_DIR"
             git fetch origin
-            git reset --hard origin/main  # Overwrites local changes with latest main branch code
+            git reset --hard origin/main
 
             echo "3. Installing dependencies & building into dist/..."
             npm ci
