@@ -3,7 +3,7 @@ name: Deploy Admin Portal to EC2
 on:
   push:
     branches:
-      - main  # Make sure this matches your default branch name (main or master)
+      - main
     paths:
       - 'frontend/admin-portal/**'
       - '.github/workflows/deploy-admin-portal.yml'
@@ -20,8 +20,8 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            APP_DIR="/home/ubuntu/Apexfit/frontend/admin-portal"
-            BACKUP_DIR="/home/ubuntu/Apexfit/frontend/admin-portal-backup"
+            APP_DIR="/home/ubuntu/ApexFit/frontend/admin-portal"
+            BACKUP_DIR="/home/ubuntu/ApexFit/frontend/admin-portal-backup"
 
             echo "1. Creating backup of current directory..."
             rm -rf "$BACKUP_DIR"
@@ -32,11 +32,11 @@ jobs:
             git fetch origin
             git reset --hard origin/main
 
-            echo "3. Installing dependencies & building into dist/..."
+            echo "3. Installing dependencies & building..."
             npm ci
             npm run build
 
             echo "4. Reloading Nginx..."
             sudo systemctl reload nginx
 
-            echo "Deployment successful!"
+            echo "Admin Portal deployment successful!"
