@@ -114,6 +114,8 @@ export function AuthProvider({ children }) {
   // ── Register ─────────────────────────────────────────
   // POST /api/v1/auth/register  { email, username, password }
   const register = useCallback(async ({ email, username, password }) => {
+  console.log("REGISTER FUNCTION CALLED")
+
     try {
       const { data } = await api.post('/auth/register', {
         email,

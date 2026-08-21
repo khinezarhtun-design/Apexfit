@@ -54,7 +54,12 @@ CREATE TRIGGER set_staff_updated_at BEFORE UPDATE ON staff
     await client.query(SQL);
     logger.info('[Migrate] ✅ Complete.');
   } catch (err) {
-    logger.error('[Migrate] ❌ Failed:', err.message);
-    process.exit(1);
-  } finally { client.release(); await pool.end(); }
+  console.error(err);
+  console.error(err.message);
+  console.error(err.stack);
+
+  logger.error(`[Migrate] ❌ Failed: ${err.message}`);
+
+  process.exit(1);
+}
 })();
