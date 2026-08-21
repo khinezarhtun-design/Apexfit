@@ -1,0 +1,46 @@
+name: Deploy Membership Service to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/membership-service/**'
+      - '.github/workflows/deploy-membership-service.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            APP_DIR="/home/ubuntu/ApexFit/services/membership-service"
+            BACKUP_DIR="/home/ubuntu/ApexFit/services/membership-service-backup"
+            CONFIG_FILE="/home/ubuntu/backend-configs/membership-service.env"
+
+            echo "1. Creating backup of current service..."
+            rm -rf "$BACKUP_DIR"
+            cp -r "$APP_DIR" "$BACKUP_DIR"
+
+            echo "2. Pulling latest code..."
+            cd "$APP_DIR"
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "3. Restoring environment file..."
+            cp "$CONFIG_FILE" "$APP_DIR/.env"
+
+            echo "4. Installing dependencies..."
+            npm ci --production
+
+            echo "5. Restarting service & Nginx..."
+            sudo systemctl restart membership-service
+            sudo systemctl reload nginx
+
+            echo "Membership Service deployment successful!"

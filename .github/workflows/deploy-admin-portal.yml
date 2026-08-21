@@ -1,0 +1,42 @@
+name: Deploy Admin Portal to EC2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/admin-portal/**'
+      - '.github/workflows/deploy-admin-portal.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            APP_DIR="/home/ubuntu/ApexFit/frontend/admin-portal"
+            BACKUP_DIR="/home/ubuntu/ApexFit/frontend/admin-portal-backup"
+
+            echo "1. Creating backup of current directory..."
+            rm -rf "$BACKUP_DIR"
+            cp -r "$APP_DIR" "$BACKUP_DIR"
+
+            echo "2. Navigating to project & pulling latest code..."
+            cd "$APP_DIR"
+            git fetch origin
+            git reset --hard origin/main
+
+            echo "3. Installing dependencies & building..."
+            npm ci
+            npm run build
+
+            echo "4. Reloading Nginx..."
+            sudo systemctl reload nginx
+
+            echo "Admin Portal deployment successful!"
